@@ -27,4 +27,6 @@ public interface IncomingChequeRepository extends JpaRepository<IncomingCheque, 
 
     @org.springframework.data.jpa.repository.Query("SELECT c FROM IncomingCheque c LEFT JOIN FETCH c.customer WHERE c.status IN ('PENDING', 'CREATED', 'DUE', 'DEPOSITED', 'BOUNCED', 'RETURNED') ORDER BY c.chequeDate ASC")
     List<IncomingCheque> findActiveIncomingCheques();
+
+    List<IncomingCheque> findTop5ByOrderByIdDesc();
 }

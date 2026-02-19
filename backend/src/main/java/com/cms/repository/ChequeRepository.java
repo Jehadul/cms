@@ -24,4 +24,6 @@ public interface ChequeRepository extends JpaRepository<Cheque, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT c FROM Cheque c LEFT JOIN FETCH c.chequeBook cb LEFT JOIN FETCH cb.account a LEFT JOIN FETCH a.branch b LEFT JOIN FETCH b.bank LEFT JOIN FETCH c.vendor WHERE c.status IN ('ISSUED', 'PRINTED', 'DUE') ORDER BY c.chequeDate ASC")
     List<Cheque> findActiveOutgoingCheques();
+
+    List<Cheque> findTop5ByOrderByIdDesc();
 }

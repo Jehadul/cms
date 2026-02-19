@@ -1,7 +1,7 @@
 package com.cms.service;
 
 import com.cms.model.AlertConfig;
-import com.cms.repository.AlertConfigRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
