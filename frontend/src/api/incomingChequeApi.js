@@ -11,11 +11,7 @@ export const createIncomingCheque = async (chequeData, file) => {
     if (file) {
         formData.append('file', file);
     }
-    const response = await api.post('/incoming-cheques', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const response = await api.post('/incoming-cheques', formData);
     return response.data;
 };
 
@@ -25,11 +21,7 @@ export const updateIncomingCheque = async (id, chequeData, file) => {
     if (file) {
         formData.append('file', file);
     }
-    const response = await api.put(`/incoming-cheques/${id}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const response = await api.put(`/incoming-cheques/${id}`, formData);
     return response.data;
 };
 

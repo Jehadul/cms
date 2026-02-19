@@ -79,4 +79,12 @@ public class PdcService {
     public void runPdcCheckNow() {
         processDuePdcs();
     }
+
+    public List<Cheque> getActiveOutgoingCheques() {
+        return chequeRepository.findActiveOutgoingCheques();
+    }
+
+    public List<IncomingCheque> getActiveIncomingCheques() {
+        return incomingChequeRepository.findActiveIncomingCheques();
+    }
 }

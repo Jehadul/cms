@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { createBranch, getBranchById, updateBranch, getBankById } from '../../api/bankApi';
 
 const BranchForm = () => {
@@ -28,8 +28,11 @@ const BranchForm = () => {
 
     const loadBankInfo = async () => {
         try {
+            if (!bankId) return;
             const bank = await getBankById(bankId);
-            setBankName(bank.name);
+            if (bank) {
+                setBankName(bank.name);
+            }
         } catch (error) {
             console.error("Failed to load bank info", error);
         }
@@ -38,7 +41,15 @@ const BranchForm = () => {
     const loadBranch = async () => {
         try {
             const data = await getBranchById(id);
-            setFormData(data);
+            // Ensure null values from backend are converted to empty strings for controlled inputs
+            setFormData({
+                ...data,
+                address: data.address || '',
+                ifscCode: data.ifscCode || '',
+                routingCode: data.routingCode || '',
+                contactNumber: data.contactNumber || '',
+                email: data.email || ''
+            });
         } catch (error) {
             console.error("Failed to fetch branch", error);
         }

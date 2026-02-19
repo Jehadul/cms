@@ -1,5 +1,6 @@
 package com.cms.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -18,10 +19,12 @@ public class BankAccount {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Company company;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Branch branch;
 
     @Column(nullable = false)
@@ -34,6 +37,7 @@ public class BankAccount {
     // Default template for this specific account
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private ChequeTemplate defaultTemplate;
 
     @Builder.Default

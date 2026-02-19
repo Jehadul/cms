@@ -67,6 +67,7 @@ const BankAccountList = () => {
                                 <td style={{ padding: '0.75rem' }}>{account.balance}</td>
                                 <td style={{ padding: '0.75rem' }}>
                                     <Link to={`/accounts/edit/${account.id}`} className="btn btn-sm" style={{ marginRight: '0.5rem', color: 'var(--color-primary)' }}>Edit</Link>
+                                    <Link to={`/cheque-books?accountId=${account.id}`} className="btn btn-sm" style={{ marginRight: '0.5rem', color: 'var(--color-secondary)' }}>Cheques</Link>
                                     <button onClick={() => handleDelete(account.id)} className="btn btn-sm" style={{ color: 'var(--color-error)' }}>Delete</button>
                                 </td>
                             </tr>

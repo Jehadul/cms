@@ -19,7 +19,12 @@ public interface IncomingChequeRepository extends JpaRepository<IncomingCheque, 
     List<IncomingCheque> findByStatusAndChequeDateLessThanEqual(com.cms.model.IncomingChequeStatus status,
             LocalDate date);
 
+    List<IncomingCheque> findByStatusAndChequeDate(com.cms.model.IncomingChequeStatus status, LocalDate date);
+
     // Aggregation for reports
     @org.springframework.data.jpa.repository.Query("SELECT new com.cms.dto.PdcSummaryDTO('Incoming', COUNT(c), SUM(c.amount), CAST(c.status AS string)) FROM IncomingCheque c GROUP BY c.status")
     List<com.cms.dto.PdcSummaryDTO> getIncomingChequeSummary();
+
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM IncomingCheque c LEFT JOIN FETCH c.customer WHERE c.status IN ('PENDING', 'CREATED', 'DUE', 'DEPOSITED', 'BOUNCED', 'RETURNED') ORDER BY c.chequeDate ASC")
+    List<IncomingCheque> findActiveIncomingCheques();
 }

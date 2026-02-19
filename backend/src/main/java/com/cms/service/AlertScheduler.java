@@ -13,25 +13,22 @@ import java.util.List;
 public class AlertScheduler {
 
     @Autowired
-    private AlertConfigRepository alertConfigRepository;
+    private com.cms.repository.AlertConfigRepository alertConfigRepository;
 
-    // Repositories will typically be used here for checks
-    // private final ChequeRepository chequeRepository;
-    // private final IncomingChequeRepository incomingChequeRepository;
-    // private final CompanyRepository companyRepository;
+    @Autowired
+    private com.cms.repository.ChequeRepository chequeRepository;
 
-    // Notification Service
-    // private final NotificationService notificationService;
+    @Autowired
+    private com.cms.repository.IncomingChequeRepository incomingChequeRepository;
 
-    // Run daily at 8 AM
-    @Scheduled(cron = "0 0 8 * * ?")
+    @Autowired
+    private NotificationService notificationService;
+
+    // Run every minute for Development/Test (Production should be daily or hourly)
+    @Scheduled(fixedDelay = 60000)
     public void runDailyChecks() {
-        System.out.println("Running Daily Alert Checks...");
+        System.out.println("Running Alert Checks (" + java.time.LocalDateTime.now() + ")...");
 
-        // Iterate per company to respect configs
-        // For efficiency, we would query companies first or use native queries
-        // But for this demo, let's fetch all configs or assume system level scan
-        // Better: Find all configs
         List<AlertConfig> configs = alertConfigRepository.findAll();
 
         for (AlertConfig config : configs) {
@@ -40,23 +37,49 @@ public class AlertScheduler {
     }
 
     private void checkCompanyAlerts(AlertConfig config) {
+        if (config == null || config.getCompany() == null)
+            return;
+
         Long companyId = config.getCompany().getId();
         LocalDate today = LocalDate.now();
 
         // 1. Outgoing PDCs Due Today
         if (config.isNotifyPdcDueToday()) {
-            // Logic to check repository
-            System.out.println("Checking alerts for Company ID: " + companyId + " for date: " + today);
+            List<com.cms.model.Cheque> dueToday = chequeRepository.findByStatusAndChequeDate(
+                    com.cms.model.ChequeStatus.ISSUED, today);
+            List<com.cms.model.Cheque> markedDue = chequeRepository.findByStatusAndChequeDate(
+                    com.cms.model.ChequeStatus.DUE, today);
+            dueToday.addAll(markedDue);
+
+            if (!dueToday.isEmpty()) {
+                String msg = "You have " + dueToday.size() + " outgoing cheque(s) due today (" + today + ").";
+                notificationService.sendAlert(companyId, "Outgoing Cheques Due Today", msg, "WARNING");
+                System.out.println("Alert generated: " + msg);
+            }
         }
 
-        // In a real app, we would inject specific query results here.
-        // For the sake of the demo, let's simulate ONE check if we had repository
-        // methods
-        // List<Cheque> dueCheques =
-        // chequeRepository.findByCompanyIdAndChequeDate(companyId, today);
-        // ...
+        // 2. Outgoing PDCs Upcoming (based on config days)
+        if (config.isNotifyPdcUpcoming()) {
+            int days = config.getDaysBeforeUpcoming() > 0 ? config.getDaysBeforeUpcoming() : 1;
+            LocalDate upcomingDate = today.plusDays(days);
 
-        // Since we are building this incrementally, I will just log that we would scan
-        // here
+            List<com.cms.model.Cheque> dueUpcoming = chequeRepository.findByStatusAndChequeDate(
+                    com.cms.model.ChequeStatus.ISSUED, upcomingDate);
+
+            if (!dueUpcoming.isEmpty()) {
+                String msg = "You have " + dueUpcoming.size() + " outgoing cheque(s) due in " + days + " day(s) ("
+                        + upcomingDate + ").";
+                notificationService.sendAlert(companyId, "Upcoming Cheque Payments", msg, "INFO");
+            }
+        }
+
+        // 3. Incoming Cheques (Receivables) Due Today
+        List<com.cms.model.IncomingCheque> inDue = incomingChequeRepository.findByStatusAndChequeDate(
+                com.cms.model.IncomingChequeStatus.PENDING, today);
+        if (!inDue.isEmpty()) {
+            String msg = "You have " + inDue.size() + " incoming cheque(s) to deposit today (" + today + ").";
+            notificationService.sendAlert(companyId, "Incoming Cheques Deposit Today", msg, "INFO");
+            System.out.println("Alert generated: " + msg);
+        }
     }
 }

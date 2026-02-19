@@ -25,6 +25,9 @@ public class DataInitializer implements CommandLineRunner {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
+    private com.cms.repository.ChequeRepository chequeRepository;
+
+    @Autowired
     private com.cms.repository.BankRepository bankRepository;
     @Autowired
     private com.cms.repository.BranchRepository branchRepository;
@@ -170,18 +173,64 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("Incoming Cheques created.");
         }
 
+        // 7.1 Create Outgoing Cheques (PDC / Issued) ONLY if none exist
+        if (chequeRepository.countByStatus(com.cms.model.ChequeStatus.ISSUED) == 0
+                && chequeRepository.countByStatus(com.cms.model.ChequeStatus.DUE) == 0) {
+            // Find all cheques
+            java.util.List<com.cms.model.Cheque> allCheques = chequeRepository.findAll();
+            // Filter stream for UNUSED
+            java.util.List<com.cms.model.Cheque> avail = allCheques.stream()
+                    .filter(c -> c.getStatus() == com.cms.model.ChequeStatus.UNUSED).limit(5).toList();
+
+            if (avail.size() >= 3) {
+                com.cms.model.Vendor vendor = vendorRepository.findAll().get(0);
+
+                // Cheque 1: Issued to Vendor (PDC)
+                com.cms.model.Cheque c1 = avail.get(0);
+                c1.setStatus(com.cms.model.ChequeStatus.ISSUED);
+                c1.setVendor(vendor);
+                c1.setAmount(new java.math.BigDecimal("12500.00"));
+                c1.setChequeDate(java.time.LocalDate.now().plusDays(10));
+                chequeRepository.save(c1);
+
+                // Cheque 2: Issued to specific Payee (Due Today)
+                com.cms.model.Cheque c2 = avail.get(1);
+                c2.setStatus(com.cms.model.ChequeStatus.DUE);
+                c2.setPayeeName("John Doe Consultant");
+                c2.setAmount(new java.math.BigDecimal("5000.00"));
+                c2.setChequeDate(java.time.LocalDate.now());
+                chequeRepository.save(c2);
+
+                // Cheque 3: Printed (Already processed)
+                com.cms.model.Cheque c3 = avail.get(2);
+                c3.setStatus(com.cms.model.ChequeStatus.PRINTED);
+                c3.setPayeeName("Office Supplies Vendor");
+                c3.setAmount(new java.math.BigDecimal("780.00"));
+                c3.setChequeDate(java.time.LocalDate.now().minusDays(2));
+                chequeRepository.save(c3);
+
+                System.out.println("Outgoing Cheques (Issued/Due/Printed) created from available pool.");
+            }
+        }
+
         // 8. Create Default Cheque Template
         if (chequeTemplateRepository.count() == 0) {
             com.cms.model.ChequeTemplate tpl = new com.cms.model.ChequeTemplate();
-            tpl.setName("Standard HDFC");
-            tpl.setDescription("Standard A4 Cheque for HDFC");
-            // Basic JSON config using approx coordinates for an A4 sheet (bottom-left
-            // origin in PDF usually, but here we used direct placement)
-            // { "payee": { "x": 100, "y": 700 }, ... }
-            String config = "{\"payee\": {\"x\": 100, " + "\"y\": 750, \"fontSize\": 12}," +
-                    "\"date\": {\"x\": 450, " + "\"y\": 780, \"fontSize\": 12}," +
-                    "\"amountNumeric\": {\"x\": 450, " + "\"y\": 700, \"fontSize\": 12}," +
-                    "\"amountWords\": {\"x\": 100, " + "\"y\": 680, \"fontSize\": 12}}";
+            tpl.setName("Standard Image Match");
+            tpl.setDescription("Layout matching the provided image sample");
+
+            // New Config based on Image Analysis (Top of A4)
+            String config = "{" +
+                    "\"payee\": {\"x\": 100, \"y\": 720, \"fontSize\": 10}," +
+                    "\"date\": {\"x\": 450, \"y\": 780, \"fontSize\": 12, \"charSpacing\": 10}," +
+                    "\"amountNumeric\": {\"x\": 450, \"y\": 680, \"fontSize\": 12, \"isBold\": true}," +
+                    "\"amountWords\": {\"x\": 140, \"y\": 690, \"fontSize\": 10}," +
+                    "\"bankName\": {\"x\": 100, \"y\": 750, \"fontSize\": 10}," +
+                    "\"companyName\": {\"x\": 300, \"y\": 640, \"fontSize\": 11, \"isBold\": true}," +
+                    "\"acPayee\": {\"x\": 50, \"y\": 800, \"fontSize\": 8, \"rotation\": 45, \"isBold\": true}," +
+                    "\"signatureLabel\": {\"x\": 420, \"y\": 600, \"fontSize\": 8}" +
+                    "}";
+
             tpl.setCanvasConfig(config);
             tpl.setActive(true);
             chequeTemplateRepository.save(tpl);

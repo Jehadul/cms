@@ -1,5 +1,6 @@
 package com.cms.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,6 +30,7 @@ public class Bank {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "default_template_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private ChequeTemplate defaultTemplate;
 
     @Builder.Default
