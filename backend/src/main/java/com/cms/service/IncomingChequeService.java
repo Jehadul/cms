@@ -39,12 +39,14 @@ public class IncomingChequeService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<IncomingChequeDTO> getAllIncomingCheques() {
         return incomingChequeRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public IncomingChequeDTO getIncomingChequeById(Long id) {
         IncomingCheque cheque = incomingChequeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cheque not found"));

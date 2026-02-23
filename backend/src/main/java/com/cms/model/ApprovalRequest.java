@@ -32,17 +32,24 @@ public class ApprovalRequest {
     @Column(columnDefinition = "TEXT")
     private String payload;
 
-    // Who requested it
+    // Who requested it (MAKER)
     @Column(nullable = false)
     private Long requestedBy;
 
-    // Who approved it (null until approved)
-    private Long approvedBy;
+    // Track approvals
+    private Long checkedBy; // Who performed checker role
+    private Long approvedBy; // Who performed approver role
+    private Long authorizedBy; // Who performed final finance authorization
+
+    private String currentStage; // CHECKER, APPROVER, FINANCE, APPROVED, REJECTED
+
+    // Decimal amount for value-based routing
+    private java.math.BigDecimal amount;
 
     // Current status of the request
     @Builder.Default
     @Column(nullable = false)
-    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
+    private String status = "PENDING"; // Summary status: PENDING, APPROVED, REJECTED
 
     @Builder.Default
     private LocalDateTime requestedAt = LocalDateTime.now();

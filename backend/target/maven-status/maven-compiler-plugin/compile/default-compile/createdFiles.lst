@@ -5,10 +5,12 @@ com\cms\service\NotificationService.class
 com\cms\service\ReceiptService.class
 com\cms\model\Customer$CustomerBuilder.class
 com\cms\repository\CustomerRepository.class
+com\cms\dto\AuditLogDTO$AuditLogDTOBuilder.class
 com\cms\model\Cheque$ChequeBuilder.class
 com\cms\dto\ChequeTemplateDTO.class
 com\cms\security\JwtAuthenticationFilter.class
 com\cms\controller\BankController.class
+com\cms\controller\AlertConfigController.class
 com\cms\dto\ChequeDTO.class
 com\cms\dto\CompanyDTO.class
 com\cms\model\Company$CompanyBuilder.class
@@ -23,6 +25,7 @@ com\cms\model\Bank$BankBuilder.class
 com\cms\payload\JwtAuthenticationResponse.class
 com\cms\model\IncomingCheque.class
 com\cms\model\User$UserBuilder.class
+com\cms\controller\DashboardController.class
 com\cms\model\Cheque.class
 com\cms\controller\ReportController.class
 com\cms\controller\CompanyController.class
@@ -38,12 +41,14 @@ com\cms\repository\ApprovalRequestRepository.class
 com\cms\payload\ApiResponse.class
 com\cms\service\ReportService.class
 com\cms\service\CompanyService.class
+com\cms\dto\ActivityDTO$ActivityDTOBuilder.class
 com\cms\security\UserPrincipal.class
 com\cms\controller\AuthController.class
 com\cms\repository\AuditLogRepository.class
 com\cms\model\ApprovalRequest$ApprovalRequestBuilder.class
 com\cms\repository\ChequeBookRepository.class
 com\cms\config\AppConfig.class
+com\cms\dto\ActivityDTO.class
 com\cms\model\UserCompanyRole$UserCompanyRoleBuilder.class
 com\cms\model\UserCompanyRole.class
 com\cms\model\ChequeTemplate$ChequeTemplateBuilder.class
@@ -54,8 +59,10 @@ com\cms\controller\ChequeTemplateController.class
 com\cms\model\AlertConfig$AlertConfigBuilder.class
 com\cms\model\Vendor$VendorBuilder.class
 com\cms\service\ChequeBookService.class
+com\cms\controller\AuditLogController.class
 com\cms\model\BankAccount$BankAccountBuilder.class
 com\cms\repository\CompanyRepository.class
+com\cms\service\DashboardService.class
 com\cms\model\Branch$BranchBuilder.class
 com\cms\service\WorkflowService.class
 com\cms\model\ChequeWorkflowStatus.class
@@ -63,6 +70,7 @@ com\cms\model\Branch.class
 com\cms\dto\BankAccountDTO.class
 com\cms\model\AuditLog.class
 com\cms\repository\AlertConfigRepository.class
+com\cms\service\AuditLogService.class
 com\cms\service\ChequePrintingService.class
 com\cms\controller\ChequeBookController.class
 com\cms\service\BankAccountService.class
@@ -75,9 +83,11 @@ com\cms\dto\IncomingChequeDTO.class
 com\cms\dto\ReportFilterDTO.class
 com\cms\model\ApprovalRequest.class
 com\cms\repository\BankRepository.class
+com\cms\dto\DashboardStatsDTO.class
 com\cms\controller\IncomingChequeController.class
 com\cms\security\CustomUserDetailsService.class
 com\cms\repository\UserCompanyRoleRepository.class
+com\cms\dto\AuditLogDTO.class
 com\cms\payload\SignUpRequest.class
 com\cms\dto\VendorDTO.class
 com\cms\model\Vendor.class
@@ -86,6 +96,7 @@ com\cms\config\DataInitializer.class
 com\cms\controller\BranchController.class
 com\cms\model\Bank.class
 com\cms\service\ChequePrintingService$1.class
+com\cms\dto\DashboardStatsDTO$DashboardStatsDTOBuilder.class
 com\cms\model\Notification$NotificationBuilder.class
 com\cms\dto\PdcSummaryDTO.class
 com\cms\controller\NotificationController.class

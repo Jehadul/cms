@@ -89,8 +89,14 @@ input, select, textarea {
 
 .btn-primary:hover {
   background-color: var(--color-primary-dark);
+  color: white;
   transform: translateY(-1px);
 }
+
+.btn:hover {
+  color: inherit; /* Ensure default buttons don't inherit a:hover color blindly if not explicitly set */
+}
+
 
 .form-group {
   margin-bottom: 1.5rem;

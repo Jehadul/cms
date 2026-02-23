@@ -154,44 +154,70 @@ const ApprovalDashboard = () => {
                 <Modal.Body>
                     {selectedRequest && (
                         <div>
-                            <div className="row mb-3">
-                                <div className="col-md-6">
-                                    <strong>Entity Type:</strong> {selectedRequest.entityType}
-                                </div>
-                                <div className="col-md-6">
-                                    <strong>Entity ID:</strong> {selectedRequest.entityId}
-                                </div>
-                            </div>
-                            <div className="row mb-3">
-                                <div className="col-md-6">
-                                    <strong>Action:</strong> {selectedRequest.actionType}
-                                </div>
-                                <div className="col-md-6">
-                                    <strong>Requested By:</strong> User #{selectedRequest.requestedBy}
+                            <div style={{ padding: '1.5rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
+                                <div className="row g-4">
+                                    <div className="col-md-6">
+                                        <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem', display: 'block' }}>Entity Type</label>
+                                        <div style={{ fontSize: '1rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <FileText size={16} color="var(--color-primary)" /> {selectedRequest.entityType}
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem', display: 'block' }}>Entity ID</label>
+                                        <div style={{ fontSize: '1rem', fontWeight: '500', fontFamily: 'monospace' }}>#{selectedRequest.entityId}</div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem', display: 'block' }}>Action Type</label>
+                                        <span className="badge bg-primary" style={{ padding: '0.4rem 0.6rem' }}>{selectedRequest.actionType}</span>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem', display: 'block' }}>Requested By</label>
+                                        <div style={{ fontSize: '1rem', fontWeight: '500' }}>User ID: {selectedRequest.requestedBy}</div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <hr />
-
-                            <h5>Payload / Data Changes</h5>
-                            <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)', maxHeight: '300px', overflowY: 'auto' }}>
-                                <pre style={{ margin: 0, fontSize: '0.85rem' }}>
-                                    {selectedRequest.payload ? JSON.stringify(JSON.parse(selectedRequest.payload), null, 2) : "No additional data."}
-                                </pre>
+                            <h5 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <ClipboardCheck size={20} color="var(--color-primary)" /> Payload / Data Changes
+                            </h5>
+                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                                {selectedRequest.payload ? (
+                                    <table className="table table-sm table-bordered mb-0">
+                                        <tbody style={{ backgroundColor: 'white' }}>
+                                            {Object.entries(JSON.parse(selectedRequest.payload)).map(([key, value]) => (
+                                                <tr key={key} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                                    <td style={{ width: '35%', fontWeight: '600', backgroundColor: '#f8fafc', textTransform: 'capitalize', padding: '0.75rem 1rem', color: '#475569', fontSize: '0.9rem' }}>
+                                                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                                                    </td>
+                                                    <td style={{ padding: '0.75rem 1rem', fontWeight: '500', color: value !== null && value !== '' ? '#0f172a' : '#94a3b8' }}>
+                                                        {value !== null && value !== '' ? String(value) : <i>Not Provided</i>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                                        No additional data payload provided for this request.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowModal(false)}>
-                        Close
+                <Modal.Footer style={{ borderTop: '1px solid #e2e8f0', padding: '1.25rem' }}>
+                    <Button variant="outline-secondary" onClick={() => setShowModal(false)} style={{ borderRadius: '6px', fontWeight: '500' }}>
+                        Cancel
                     </Button>
-                    <Button variant="danger" onClick={() => handleAction(selectedRequest.id, 'reject')} disabled={processing}>
-                        Reject
-                    </Button>
-                    <Button variant="success" onClick={() => handleAction(selectedRequest.id, 'approve')} disabled={processing}>
-                        {processing ? 'Processing...' : 'Approve Request'}
-                    </Button>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginLeft: 'auto' }}>
+                        <Button variant="danger" onClick={() => handleAction(selectedRequest.id, 'reject')} disabled={processing} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '6px', fontWeight: '500' }}>
+                            <X size={16} /> Reject Request
+                        </Button>
+                        <Button variant="success" onClick={() => handleAction(selectedRequest.id, 'approve')} disabled={processing} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '6px', fontWeight: '500' }}>
+                            {processing ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> : <Check size={16} />}
+                            {processing ? 'Processing...' : 'Approve Request'}
+                        </Button>
+                    </div>
                 </Modal.Footer>
             </Modal>
         </div>

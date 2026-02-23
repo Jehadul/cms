@@ -38,6 +38,9 @@ public class Cheque {
     private String payeeName;
     private LocalDate chequeDate;
 
+    @Builder.Default
+    private Integer printCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendor_id")
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })

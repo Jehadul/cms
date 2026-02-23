@@ -19,4 +19,5 @@ public class ChequeDTO {
     private String vendorName;
     private ChequeWorkflowStatus workflowStatus;
     private String remarks;
+    private Integer printCount = 0;
 }

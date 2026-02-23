@@ -1,6 +1,7 @@
 package com.cms.controller;
 
 import com.cms.model.ApprovalRequest;
+import com.cms.model.Role;
 import com.cms.service.WorkflowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,22 @@ public class WorkflowController {
         return 1L; // Mock for now
     }
 
+    @PostMapping("/request")
+    public ResponseEntity<ApprovalRequest> createRequest(@RequestBody java.util.Map<String, Object> payloadMap) {
+        String entityType = (String) payloadMap.get("entityType");
+        Long entityId = payloadMap.get("entityId") != null ? Long.valueOf(payloadMap.get("entityId").toString()) : null;
+        String actionType = (String) payloadMap.get("actionType");
+        String payload = (String) payloadMap.get("payload");
+        java.math.BigDecimal amount = null;
+        if (payloadMap.get("amount") != null) {
+            amount = new java.math.BigDecimal(payloadMap.get("amount").toString());
+        }
+
+        ApprovalRequest request = workflowService.createApprovalRequest(
+                entityType, entityId, actionType, payload, getCurrentUserId(), amount);
+        return ResponseEntity.ok(request);
+    }
+
     @GetMapping("/pending")
     public ResponseEntity<List<ApprovalRequest>> getPendingApprovals() {
         return ResponseEntity.ok(workflowService.getPendingApprovals());
@@ -28,7 +45,7 @@ public class WorkflowController {
 
     @PostMapping("/approve/{id}")
     public ResponseEntity<Void> approveRequest(@PathVariable Long id) {
-        workflowService.approveRequest(id, getCurrentUserId());
+        workflowService.approveRequest(id, getCurrentUserId(), Role.ADMIN);
         return ResponseEntity.ok().build();
     }
 

@@ -19,11 +19,9 @@ export const AuthProvider = ({ children }) => {
         if (decoded.exp * 1000 < Date.now()) {
           logout();
         } else {
-          // Ideally fetch user details or use info in token
           // Backend token subject is user ID (Long), not username.
-          // But we don't have username in token payload yet unless we customize generateToken.
-          // For now, set user object with ID.
-          setUser({ id: decoded.sub, username: decoded.sub });
+          // Now we have username in token payload as decoded.username
+          setUser({ id: decoded.sub, username: decoded.username || 'User' });
         }
       } catch (e) {
         logout();

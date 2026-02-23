@@ -26,6 +26,7 @@ import NotificationList from "./pages/notifications/NotificationList";
 import AlertConfigForm from "./pages/notifications/AlertConfigForm";
 import ApprovalDashboard from "./pages/workflow/ApprovalDashboard";
 import ReportDashboard from "./pages/ReportDashboard";
+import AuditLogList from "./pages/audit/AuditLogList";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -318,6 +319,15 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <ApprovalDashboard />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/audit"
+        element={
+          <PrivateRoute>
+            <AuditLogList />
           </PrivateRoute>
         }
       />

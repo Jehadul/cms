@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getChequeBookById, getChequesByBook, updateChequeStatus, createOutgoingCheque } from '../../api/chequeApi';
+import { getVendorsByCompany } from '../../api/vendorApi';
+import { createApprovalRequest } from '../../api/workflowApi';
 
 const ChequeBookView = () => {
     const { id } = useParams();
     const [book, setBook] = useState(null);
     const [cheques, setCheques] = useState([]);
+    const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Issue Cheque State
     const [issuingCheque, setIssuingCheque] = useState(null);
     const [issueFormData, setIssueFormData] = useState({
         payeeName: '',
+        vendorId: '',
         amount: '',
         chequeDate: new Date().toISOString().split('T')[0],
         remarks: ''
@@ -25,6 +29,17 @@ const ChequeBookView = () => {
         try {
             const bookData = await getChequeBookById(id);
             setBook(bookData);
+
+            if (bookData && bookData.companyId) { // Assuming companyId might be available on book or we fetch it somehow.
+                // Actually ChequeBook doesn't directly have companyId, usually we get it from local storage or context. 
+                // For now, let's fetch all vendors for company 1 if context isn't available easily, or use a default.
+                const vendorsData = await getVendorsByCompany(1); // MOCK: using hardcoded 1 for demo.
+                setVendors(vendorsData);
+            } else {
+                const vendorsData = await getVendorsByCompany(1); // MOCK
+                setVendors(vendorsData);
+            }
+
             const chequesData = await getChequesByBook(id);
             setCheques(chequesData);
         } catch (error) {
@@ -51,9 +66,20 @@ const ChequeBookView = () => {
         setIssuingCheque(cheque);
         setIssueFormData({
             payeeName: '',
+            vendorId: '',
             amount: '',
             chequeDate: new Date().toISOString().split('T')[0],
             remarks: ''
+        });
+    };
+
+    const handleVendorChange = (e) => {
+        const vId = e.target.value;
+        const selectedVendor = vendors.find(v => v.id == vId);
+        setIssueFormData({
+            ...issueFormData,
+            vendorId: vId,
+            payeeName: selectedVendor ? selectedVendor.name : issueFormData.payeeName
         });
     };
 
@@ -63,16 +89,30 @@ const ChequeBookView = () => {
             const payload = {
                 id: issuingCheque.id,
                 payeeName: issueFormData.payeeName,
+                vendorId: issueFormData.vendorId ? parseInt(issueFormData.vendorId) : null,
                 amount: parseFloat(issueFormData.amount),
                 chequeDate: issueFormData.chequeDate,
                 remarks: issueFormData.remarks,
-                status: 'ISSUED' // Logic in backend will handle transitions, but we can be explicit
+                status: 'ISSUED'
             };
 
-            await createOutgoingCheque(payload);
+            // 1. First, save it as in DRAFT State
+            const savedCheque = await createOutgoingCheque(payload);
+
+            // 2. Submit for Approval Workflow
+            const approvalPayload = {
+                entityType: 'Cheque',
+                entityId: savedCheque.id, // Assuming it returns the updated ID
+                actionType: 'ISSUE',
+                payload: JSON.stringify(payload),
+                amount: payload.amount // Pass the amount for value-based routing
+            };
+
+            await createApprovalRequest(approvalPayload);
+
             setIssuingCheque(null);
             loadData();
-            alert("Cheque Issued Successfully!");
+            alert("Cheque Submitted for Approval Successfully!");
         } catch (error) {
             console.error("Failed to issue cheque", error);
             alert("Failed to issue cheque");
@@ -123,7 +163,7 @@ const ChequeBookView = () => {
                             <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>Number</th>
                             <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>Status</th>
                             <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>Amount</th>
-                            <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>Payee</th>
+                            <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>Payee / Vendor</th>
                             <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>Date</th>
                             <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>Actions</th>
                         </tr>
@@ -138,55 +178,76 @@ const ChequeBookView = () => {
                                     </span>
                                 </td>
                                 <td style={{ padding: '1rem', fontWeight: cheque.amount ? '600' : 'normal' }}>
-                                    {cheque.amount ? `$${cheque.amount.toLocaleString()}` : '-'}
+                                    {cheque.workflowStatus === 'PENDING_APPROVAL' ? (
+                                        <span style={{ fontStyle: 'italic', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Draft...</span>
+                                    ) : (
+                                        cheque.amount ? `$${cheque.amount.toLocaleString()}` : '-'
+                                    )}
                                 </td>
-                                <td style={{ padding: '1rem' }}>{cheque.payeeName || '-'}</td>
-                                <td style={{ padding: '1rem' }}>{cheque.chequeDate || '-'}</td>
                                 <td style={{ padding: '1rem' }}>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        {cheque.status === 'UNUSED' && (
+                                    {cheque.workflowStatus === 'PENDING_APPROVAL' ? (
+                                        <span style={{ fontStyle: 'italic', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Draft...</span>
+                                    ) : (
+                                        cheque.vendorName ? `Vendor: ${cheque.vendorName}` : (cheque.payeeName || '-')
+                                    )}
+                                </td>
+                                <td style={{ padding: '1rem' }}>{cheque.workflowStatus === 'PENDING_APPROVAL' ? '-' : (cheque.chequeDate || '-')}</td>
+                                <td style={{ padding: '1rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        {cheque.workflowStatus === 'PENDING_APPROVAL' ? (
+                                            <span style={{ color: '#d97706', fontSize: '0.85rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                Pending Approval
+                                            </span>
+                                        ) : cheque.status === 'UNUSED' ? (
                                             <>
                                                 <button
                                                     onClick={() => handleIssueClick(cheque)}
                                                     className="btn btn-sm"
-                                                    style={{
-                                                        backgroundColor: 'var(--color-primary)',
-                                                        color: 'white',
-                                                        padding: '0.4rem 0.8rem',
-                                                        fontSize: '0.875rem'
-                                                    }}
+                                                    style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}
                                                 >
                                                     Issue
                                                 </button>
                                                 <button
                                                     onClick={() => handleStatusChange(cheque.id, 'VOID')}
                                                     className="btn btn-sm"
-                                                    style={{
-                                                        color: 'var(--color-text-muted)',
-                                                        border: '1px solid var(--color-border)',
-                                                        padding: '0.4rem 0.8rem',
-                                                        fontSize: '0.875rem'
-                                                    }}
+                                                    style={{ color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}
                                                 >
                                                     Void
                                                 </button>
+                                                <button
+                                                    onClick={() => handleStatusChange(cheque.id, 'MISSING')}
+                                                    className="btn btn-sm"
+                                                    style={{ color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}
+                                                >
+                                                    Missing
+                                                </button>
                                             </>
-                                        )}
-                                        {['ISSUED', 'PRINTED'].includes(cheque.status) && (
-                                            <Link
-                                                to={`/cheque-printing?chequeId=${cheque.id}`}
-                                                className="btn btn-sm"
-                                                style={{
-                                                    color: 'var(--color-primary)',
-                                                    border: '1px solid var(--color-primary)',
-                                                    padding: '0.4rem 0.8rem',
-                                                    textDecoration: 'none',
-                                                    fontSize: '0.875rem'
-                                                }}
-                                            >
-                                                Print
-                                            </Link>
-                                        )}
+                                        ) : ['ISSUED', 'PRINTED', 'DUE'].includes(cheque.status) ? (
+                                            <>
+                                                <Link
+                                                    to={`/cheque-printing?chequeId=${cheque.id}`}
+                                                    className="btn btn-sm"
+                                                    style={{ color: 'var(--color-primary)', border: '1px solid var(--color-primary)', padding: '0.4rem 0.8rem', textDecoration: 'none', fontSize: '0.875rem' }}
+                                                >
+                                                    Print
+                                                </Link>
+                                                <select
+                                                    onChange={(e) => {
+                                                        if (e.target.value) handleStatusChange(cheque.id, e.target.value);
+                                                        e.target.value = ''; // reset select
+                                                    }}
+                                                    className="form-input"
+                                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.875rem', height: 'auto', width: 'auto', display: 'inline-block' }}
+                                                >
+                                                    <option value="">Update Status...</option>
+                                                    <option value="CLEARED">Mark Cleared</option>
+                                                    <option value="BOUNCED">Mark Bounced</option>
+                                                    <option value="CANCELLED">Cancel Cheque</option>
+                                                    <option value="SETTLED">Settle</option>
+                                                </select>
+                                            </>
+                                        ) : null}
                                     </div>
                                 </td>
                             </tr>
@@ -207,6 +268,19 @@ const ChequeBookView = () => {
                         <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Issue Cheque #{issuingCheque.chequeNumber}</h3>
                         <form onSubmit={submitIssue}>
                             <div className="form-group">
+                                <label className="form-label">Link Vendor (Optional)</label>
+                                <select
+                                    className="form-input"
+                                    value={issueFormData.vendorId}
+                                    onChange={handleVendorChange}
+                                >
+                                    <option value="">-- No Vendor / Manual Payee --</option>
+                                    {vendors.map(v => (
+                                        <option key={v.id} value={v.id}>{v.name} ({v.code})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
                                 <label className="form-label">Payee Name</label>
                                 <input
                                     type="text"
@@ -215,6 +289,7 @@ const ChequeBookView = () => {
                                     onChange={e => setIssueFormData({ ...issueFormData, payeeName: e.target.value })}
                                     required
                                     autoFocus
+                                    placeholder={issueFormData.vendorId ? "Auto-filled from vendor" : "Enter payee name"}
                                 />
                             </div>
                             <div className="form-group">
@@ -270,6 +345,11 @@ const ChequeBookView = () => {
                 .status-unused { background-color: #f1f5f9; color: #64748b; }
                 .status-issued { background-color: #dbeafe; color: #2563eb; }
                 .status-printed { background-color: #dcfce7; color: #16a34a; }
+                .status-due { background-color: #fef3c7; color: #d97706; }
+                .status-cleared { background-color: #d1fae5; color: #059669; }
+                .status-settled { background-color: #e0e7ff; color: #4338ca; }
+                .status-bounced { background-color: #fee2e2; color: #ef4444; }
+                .status-cancelled { background-color: #f3f4f6; color: #9ca3af; }
                 .status-void { background-color: #fce7f3; color: #db2777; }
                 .status-missing { background-color: #fee2e2; color: #dc2626; }
                 

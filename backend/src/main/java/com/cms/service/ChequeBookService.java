@@ -34,6 +34,9 @@ public class ChequeBookService {
     @Autowired
     private com.cms.repository.VendorRepository vendorRepository;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     public List<ChequeBookDTO> getChequeBooksByAccount(Long accountId) {
         return chequeBookRepository.findByAccountId(accountId).stream()
                 .map(this::convertToDTO)
@@ -102,12 +105,17 @@ public class ChequeBookService {
 
         // Basic validation logic can go here (e.g., can't un-void if auditing is
         // strict)
+        ChequeStatus oldStatus = cheque.getStatus();
+
         cheque.setStatus(status);
         if (remarks != null) {
             cheque.setRemarks(remarks);
         }
 
         cheque = chequeRepository.save(cheque);
+
+        auditLogService.logAction("Cheque", cheque.getId(), status.name(), oldStatus.name(), status.name());
+
         return convertChequeToDTO(cheque);
     }
 
@@ -152,7 +160,9 @@ public class ChequeBookService {
         cheque.setWorkflowStatus(
                 dto.getWorkflowStatus() != null ? dto.getWorkflowStatus() : ChequeWorkflowStatus.DRAFT);
 
-        if (dto.getWorkflowStatus() == ChequeWorkflowStatus.APPROVED
+        if (dto.getStatus() != null) {
+            cheque.setStatus(dto.getStatus());
+        } else if (dto.getWorkflowStatus() == ChequeWorkflowStatus.APPROVED
                 || dto.getWorkflowStatus() == ChequeWorkflowStatus.PRINTED) {
             cheque.setStatus(ChequeStatus.ISSUED);
         }
@@ -162,9 +172,17 @@ public class ChequeBookService {
             com.cms.model.Vendor vendor = vendorRepository.findById(dto.getVendorId())
                     .orElseThrow(() -> new RuntimeException("Vendor not found"));
             cheque.setVendor(vendor);
+        } else {
+            cheque.setVendor(null); // Clear if user unlinked
         }
 
+        String action = (dto.getId() == null) ? "CREATE" : "UPDATE";
+        String oldStatus = cheque.getStatus() != null ? cheque.getStatus().name() : "";
         cheque = chequeRepository.save(cheque);
+        String newStatus = cheque.getStatus() != null ? cheque.getStatus().name() : "";
+
+        auditLogService.logAction("Cheque", cheque.getId(), action, oldStatus, newStatus);
+
         return convertChequeToDTO(cheque);
     }
 
@@ -191,5 +209,36 @@ public class ChequeBookService {
             dto.setVendorName(cheque.getVendor().getName());
         }
         return dto;
+    }
+
+    @Transactional
+    public void executeApprovedChequeIssue(Long chequeId, String payloadJson) {
+        Cheque cheque = chequeRepository.findById(chequeId).orElseThrow(() -> new RuntimeException("Cheque not found"));
+        ChequeStatus oldStatus = cheque.getStatus();
+
+        cheque.setWorkflowStatus(ChequeWorkflowStatus.APPROVED);
+        cheque.setStatus(ChequeStatus.ISSUED);
+        cheque = chequeRepository.save(cheque);
+
+        auditLogService.logAction("Cheque", cheque.getId(), "ISSUE_APPROVED", oldStatus.name(),
+                ChequeStatus.ISSUED.name());
+    }
+
+    @Transactional
+    public void executeRejectedChequeIssue(Long chequeId) {
+        Cheque cheque = chequeRepository.findById(chequeId).orElseThrow(() -> new RuntimeException("Cheque not found"));
+
+        cheque.setWorkflowStatus(ChequeWorkflowStatus.REJECTED);
+        // Revert to UNUSED and clear payee fields so it can be re-issued
+        cheque.setStatus(ChequeStatus.UNUSED);
+        cheque.setPayeeName(null);
+        cheque.setAmount(null);
+        cheque.setVendor(null);
+        cheque.setChequeDate(null);
+
+        cheque = chequeRepository.save(cheque);
+
+        auditLogService.logAction("Cheque", cheque.getId(), "ISSUE_REJECTED", "PENDING_APPROVAL",
+                "REJECTED (Reverted to UNUSED)");
     }
 }

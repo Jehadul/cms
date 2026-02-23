@@ -14,6 +14,7 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,6 +31,9 @@ public class ChequePrintingService {
     @Autowired
     private ChequeTemplateRepository chequeTemplateRepository;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public byte[] generateChequePdf(Long chequeId, Long templateId) throws IOException {
@@ -39,9 +43,12 @@ public class ChequePrintingService {
         ChequeTemplate template = chequeTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new RuntimeException("Template not found"));
 
-        return createPdf(List.of(cheque), template);
+        byte[] pdf = createPdf(List.of(cheque), template);
+        logPrintAndIncrementCount(List.of(cheque));
+        return pdf;
     }
 
+    @Transactional
     public byte[] generateBatchChequePdf(List<Long> chequeIds, Long templateId) throws IOException {
         List<Cheque> cheques = chequeRepository.findAllById(chequeIds);
         if (cheques.isEmpty()) {
@@ -51,7 +58,20 @@ public class ChequePrintingService {
         ChequeTemplate template = chequeTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new RuntimeException("Template not found"));
 
-        return createPdf(cheques, template);
+        byte[] pdf = createPdf(cheques, template);
+        logPrintAndIncrementCount(cheques);
+        return pdf;
+    }
+
+    private void logPrintAndIncrementCount(List<Cheque> cheques) {
+        for (Cheque cheque : cheques) {
+            int oldCount = cheque.getPrintCount() != null ? cheque.getPrintCount() : 0;
+            cheque.setPrintCount(oldCount + 1);
+            chequeRepository.save(cheque);
+
+            auditLogService.logAction("Cheque", cheque.getId(), "PRINT", "printCount=" + oldCount,
+                    "printCount=" + (oldCount + 1));
+        }
     }
 
     private byte[] createPdf(List<Cheque> cheques, ChequeTemplate template) throws IOException {

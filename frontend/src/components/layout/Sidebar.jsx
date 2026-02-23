@@ -71,7 +71,10 @@ const Sidebar = () => {
                     <span className="nav-icon">📈</span>
                     Reports
                 </NavLink>
-                {/* Add more links based on requirements */}
+                <NavLink to="/audit" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                    <span className="nav-icon">🛡️</span>
+                    Audit Log
+                </NavLink>
                 <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '1rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>
                     &copy; 2026 CMS
                 </div>
